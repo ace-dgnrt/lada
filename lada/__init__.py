@@ -10,6 +10,23 @@ else:
 
 os.environ["NO_ALBUMENTATIONS_UPDATE"] = "1"
 os.environ["YOLO_VERBOSE"] = "false"
+# On ROCm, MIOpen's default find mode benchmarks all candidate kernels whenever it encounters a new
+# convolution configuration. The restoration pipeline feeds it slightly different shapes constantly
+# (mosaic bounding boxes jitter between frames), causing multi-second stalls during processing.
+# FAST mode picks the first valid kernel instead, which has negligible impact on speed for the
+# kernels used here but avoids the stalls entirely. Only relevant for ROCm builds of torch; the
+# check reads the wheel metadata instead of torch.version.hip because this must run before torch
+# is imported (MIOpen initializes during the torch import). setdefault keeps the user able to
+# override it externally.
+def _is_rocm_torch_build() -> bool:
+    try:
+        from importlib.metadata import version
+        return "+rocm" in version("torch")
+    except Exception:
+        return False
+
+if _is_rocm_torch_build():
+    os.environ.setdefault("MIOPEN_FIND_MODE", "FAST")
 
 VERSION = '0.10.1'
 
