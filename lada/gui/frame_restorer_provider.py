@@ -127,7 +127,8 @@ class FrameRestorerProvider:
             mosaic_detection_path = ModelFiles.get_detection_model_by_name(self.options.mosaic_detection_model_name).path
             mosaic_detection_model, mosaic_restoration_model, mosaic_restoration_model_preferred_pad_mode = load_models(
                 torch.device(self.options.device), self.options.mosaic_restoration_model_name, mosaic_restoration_model_path, None,
-                mosaic_detection_path, fp16=self.options.fp16_enabled, detect_face_mosaics=self.options.detect_face_mosaics,
+                mosaic_detection_path, fp16_restoration=self.options.fp16_enabled, fp16_detection=self.options.fp16_enabled,
+                detect_face_mosaics=self.options.detect_face_mosaics,
             )
 
             self.models_cache = dict(mosaic_restoration_model_name=self.options.mosaic_restoration_model_name,

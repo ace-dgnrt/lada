@@ -57,7 +57,9 @@ def setup_argparser() -> argparse.ArgumentParser:
     group_general.add_argument('--temporary-directory', type=str, default=tempfile.gettempdir(), help=_('Directory for temporary video files during restoration process. Alternatively, you can use the environment variable TMPDIR. (default: %(default)s)'))
     group_general.add_argument('--output-file-pattern', type=str, default="{orig_file_name}.restored.mp4", help=_("Pattern used to determine output file name(s). Used when input is a directory, or a file but no output path was specified. Must include the placeholder '{orig_file_name}'. (default: %(default)s)"))
     group_general.add_argument('--device', type=str, default="cuda:0", help=_('Device used for running Restoration and Detection models. Use "cpu" or "cuda". If you have multiple GPUs you can select a specific one via index e.g. "cuda:0" (default: %(default)s)'))
-    group_general.add_argument('--fp16', action=argparse.BooleanOptionalAction, default=has_modern_nvidia_gpu(), help=_("Reduces VRAM usage and may increase speed on modern GPUs, with negligible quality difference. (default: %(default)s)"))
+    group_general.add_argument('--fp16', action=argparse.BooleanOptionalAction, default=has_modern_nvidia_gpu(), help=_("Reduces VRAM usage and may increase speed on modern GPUs, with negligible quality difference. Applies to both the detection and the restoration model unless overridden via --fp16-detection/--fp16-restoration. (default: %(default)s)"))
+    group_general.add_argument('--fp16-detection', action=argparse.BooleanOptionalAction, default=None, help=_("Run the mosaic detection model in half precision. Overrides --fp16 for detection. (default: same as --fp16)"))
+    group_general.add_argument('--fp16-restoration', action=argparse.BooleanOptionalAction, default=None, help=_("Run the mosaic restoration model in half precision. Overrides --fp16 for restoration. (default: same as --fp16)"))
     group_general.add_argument('--list-devices', action='store_true', help=_("List available devices and exit"))
     group_general.add_argument('--version', action='store_true', help=_("Display version and exit"))
     group_general.add_argument('--help', action='store_true', help=_("Show this help message and exit"))
@@ -210,9 +212,11 @@ def main():
     assert encoder is not None and encoder_options is not None
 
     device = torch.device(args.device)
+    fp16_detection = args.fp16_detection if args.fp16_detection is not None else args.fp16
+    fp16_restoration = args.fp16_restoration if args.fp16_restoration is not None else args.fp16
     mosaic_detection_model, mosaic_restoration_model, preferred_pad_mode = load_models(
         device, mosaic_restoration_model_name, mosaic_restoration_model_path, args.mosaic_restoration_config_path,
-        mosaic_detection_model_path, args.fp16, args.detect_face_mosaics
+        mosaic_detection_model_path, fp16_restoration, fp16_detection, args.detect_face_mosaics
     )
 
     input_files, output_files = utils.setup_input_and_output_paths(args.input, args.output, args.output_file_pattern)

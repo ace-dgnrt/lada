@@ -14,19 +14,20 @@ def load_models(
     mosaic_restoration_model_path: str,
     mosaic_restoration_config_path: str | None,
     mosaic_detection_model_path: str,
-    fp16: bool,
+    fp16_restoration: bool,
+    fp16_detection: bool,
     detect_face_mosaics: bool):
     if mosaic_restoration_model_name.startswith("deepmosaics"):
         from lada.models.deepmosaics.models import loadmodel
         from lada.restorationpipeline.deepmosaics_mosaic_restorer import DeepmosaicsMosaicRestorer
-        _model = loadmodel.video(device, mosaic_restoration_model_path, fp16)
+        _model = loadmodel.video(device, mosaic_restoration_model_path, fp16_restoration)
         mosaic_restoration_model = DeepmosaicsMosaicRestorer(_model, device)
         pad_mode = 'reflect'
     elif mosaic_restoration_model_name.startswith("basicvsrpp"):
         from lada.models.basicvsrpp.inference import load_model
         from lada.restorationpipeline.basicvsrpp_mosaic_restorer import BasicvsrppMosaicRestorer
-        _model = load_model(mosaic_restoration_config_path, mosaic_restoration_model_path, device, fp16)
-        mosaic_restoration_model = BasicvsrppMosaicRestorer(_model, device, fp16)
+        _model = load_model(mosaic_restoration_config_path, mosaic_restoration_model_path, device, fp16_restoration)
+        mosaic_restoration_model = BasicvsrppMosaicRestorer(_model, device, fp16_restoration)
         pad_mode = 'zero'
     else:
         raise NotImplementedError()
@@ -38,5 +39,5 @@ def load_models(
             logger.info("Mosaic detection model v2 does not support detecting face mosaics. Use detection models v3 or newer. Ignoring...")
     else:
         classes = None
-    mosaic_detection_model = Yolo11SegmentationModel(mosaic_detection_model_path, device, classes=classes, conf=0.15, fp16=fp16)
+    mosaic_detection_model = Yolo11SegmentationModel(mosaic_detection_model_path, device, classes=classes, conf=0.15, fp16=fp16_detection)
     return mosaic_detection_model, mosaic_restoration_model, pad_mode
